@@ -26,6 +26,8 @@ export default class CoordsCalculator {
     this.marginFactor = marginFactor;
     this.coordinates = new CircularArray([]);
 
+    this.viewportCount = 0;
+
     this._setUpInitialCoords();
     this._subscribeUpdates();
   }
@@ -35,6 +37,8 @@ export default class CoordsCalculator {
       console.log('determining initial count');
       const count = Math.ceil((size * 1.5) / this.gap);
       console.log('intial count', count);
+
+      this.viewportCount = Math.ceil(size / this.gap);
 
       for (let i = 0; i < Math.min(count, this.totalCount); i++) {
         this.coordinates.array.push(this.gap * i);

@@ -41,9 +41,8 @@
     changeSubscription = xCoordsCalc.changeSubject$
       .pipe(Ops.skip(1))
       .subscribe(({ changes }) => {
-        const prevCells = cells;
         changes.forEach(({ idx, val }) => {
-          const cell = prevCells[idx];
+          const cell = cells[idx];
           cell.x = val;
 
           const nextCellData = cellData[Math.floor(val / cellWidth)];
@@ -51,7 +50,7 @@
           if (nextCellData) cell.text = nextCellData;
         });
 
-        cells = prevCells;
+        cells = cells;
       });
   }
 
@@ -82,7 +81,8 @@
   .recycled-row {
     position: absolute;
     top: 0;
-    left: 0;
+    left: var(--x-val);
+    overflow: hidden;
   }
 
   .recycled-row-items {
@@ -93,10 +93,11 @@
 <div
   class="recycled-row"
   style="
+    --x-val: {x}px;
     z-index: {style.zIndex};
     width: {width}px;
     height: {cellHeight}px;
-    transform: translate({x}px, {y || 0}px);
+    transform: translateY({y}px);
   "
 >
   <div class="recycled-row-items">

@@ -5,7 +5,7 @@
   import RecycledRow from '../RecycledRow/RecycledRow.svelte';
 
   import { columns, rows as rowCount, cellHeight, cellWidth } from '../../utils/consts';
-  import { yCoordsCalc, scrollSubject$ } from '../../utils/subjects';
+  import { yCoordsCalc, scrollSubject$, xCoordsCalc } from '../../utils/subjects';
 
   export let style;
   // export let y;
@@ -14,18 +14,24 @@
   export let initialY = 0;
 
   let rows = [];
-  let width = (columns * cellWidth);
-  let height = (rowCount * cellHeight);
-  let x = initialX;
-  let y = initialY;
 
   let scrollSubscription;
   let changeSubscription;
 
   const updateYCoordsCalc = () => {
+    const recycledGridRef = document.querySelector('.recycled-grid');
+
+    if (!recycledGridRef) return;
+
+    const recycledGrid = recycledGridRef;
+
+    recycledGrid.style.width = `${(xCoordsCalc.viewportCount - 1) * cellWidth}px`;
+    recycledGrid.style.height = `${(yCoordsCalc.viewportCount - 1) * cellHeight}px`;
+
     yCoordsCalc.changeSubject$
       .pipe(Ops.take(1))
-      .subscribe(({ changes }) => {
+      .toPromise()
+      .then(({ changes }) => {
         rows = (changes.map(({ idx, val }) => {
           return {
             y: val,
@@ -37,16 +43,15 @@
 
     // handle scroll left
     scrollSubscription = scrollSubject$.subscribe(({ scrollTop }) => {
-      y = ((initialY || 0) - scrollTop);
+      recycledGrid.scrollTop = scrollTop;
     });
 
     // subscribe updates
     changeSubscription = yCoordsCalc.changeSubject$
       .pipe(Ops.skip(1))
       .subscribe(({ changes }) => {
-        const prevRows = rows;
         changes.forEach(({ idx, val }) => {
-          const row = prevRows[idx];
+          const row = rows[idx];
           row.y = val;
 
           const nextCellData = cellData[Math.floor(val / cellWidth)];
@@ -54,7 +59,7 @@
           if (nextCellData) row.cellData = nextCellData.slice();
         });
 
-        rows = prevRows;
+        rows = rows;
       });
   }
 
@@ -72,12 +77,15 @@
 <style>
   .recycled-grid {
     position: absolute;
-    top: 0;
-    left: 0;
+    top: var(--y-val);
+    left: var(--x-val);
+    overflow: hidden;
   }
 
   .recycled-grid-items {
     position: relative;
+    width: 100%;
+    height: 100%;
   }
 
 </style>
@@ -85,13 +93,18 @@
 <div
   class="recycled-grid"
   style="
+    --x-val: {initialX}px;
+    --y-val: {initialY}px;
     z-index: {style.zIndex};
-    width: {width}px;
-    height: {height}px;
-    transform: translate({x}px, {y || 0}px);
   "
 >
-  <div class="recycled-grid-items">
+  <div
+    class="recycled-grid-items"
+    style="
+      width: {columns * cellWidth}px;
+      height: {rowCount * cellHeight}px;
+    "
+  >
     {#each rows as row}
       <RecycledRow {...row} style={{ zIndex: style.zIndex }} initialX={0} />
     {/each}
