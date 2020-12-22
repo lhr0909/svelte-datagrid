@@ -26,7 +26,7 @@ const xCoordsCalc = new CoordsCalculator({
   bufferFactor,
   marginFactor,
 });
-xCoordsCalc.changeSubject$.subscribe((x) => console.log('x coords changes', x));
+// xCoordsCalc.changeSubject$.subscribe((x) => console.log('x coords changes', x));
 
 const yCoordsCalc = new CoordsCalculator({
   resizeSubject: resizeSubject$.pipe(Ops.pluck('height')),
@@ -38,6 +38,6 @@ const yCoordsCalc = new CoordsCalculator({
   bufferFactor,
   marginFactor,
 });
-yCoordsCalc.changeSubject$.subscribe((y) => console.log('y coords change', y));
+// yCoordsCalc.changeSubject$.subscribe((y) => console.log('y coords change', y));
 
 export { xCoordsCalc, yCoordsCalc };

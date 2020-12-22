@@ -20,6 +20,14 @@
   let changeSubscription;
 
   const updateYCoordsCalc = () => {
+    const recycledColumnRef = document.querySelector('.recycled-column');
+
+    if (!recycledColumnRef) return;
+
+    const recycledColumn = recycledColumnRef;
+
+    recycledColumn.style.height = `${(yCoordsCalc.viewportCount - 1) * cellHeight}px`;
+
     yCoordsCalc.changeSubject$
       .pipe(Ops.take(1))
       .subscribe(({ changes }) => {
@@ -34,16 +42,15 @@
 
     // handle scroll left
     scrollSubscription = scrollSubject$.subscribe(({ scrollTop }) => {
-      y = ((initialY || 0) - scrollTop);
+      recycledColumn.scrollTop = scrollTop;
     });
 
     // subscribe updates
     changeSubscription = yCoordsCalc.changeSubject$
       .pipe(Ops.skip(1))
       .subscribe(({ changes }) => {
-        const prevCells = cells;
         changes.forEach(({ idx, val }) => {
-          const cell = prevCells[idx];
+          const cell = cells[idx];
           cell.y = val;
 
           const nextCellData = cellData[Math.floor(val / cellHeight)];
@@ -51,7 +58,7 @@
           if (nextCellData) cell.text = nextCellData;
         });
 
-        cells = prevCells;
+        cells = cells;
       });
   }
 
@@ -81,8 +88,9 @@
 <style>
   .recycled-column {
     position: absolute;
-    top: 0;
+    top: var(--y-val);
     left: 0;
+    overflow: hidden;
   }
 
   .recycled-column-items {
@@ -93,13 +101,17 @@
 <div
   class="recycled-column"
   style="
+    --y-val: {initialY}px;
     z-index: {style.zIndex};
-    width: {cellWidth}px;
-    height: {height}px;
-    transform: translate({x}px, {y}px);
   "
 >
-  <div class="recycled-column-items">
+  <div
+    class="recycled-column-items"
+    style="
+      width: {cellWidth}px;
+      height: {height}px;
+    "
+  >
     {#each cells as cell, idx}
       <Cell {...cell} style={{ zIndex: style.zIndex }} />
     {/each}

@@ -68,7 +68,7 @@ export default class CoordsCalculator {
           let currentHead = this.coordinates.head;
           let currentTail = this.coordinates.tail;
 
-          const changes = [];
+          const changes = {};
 
           while (scrollOffset - currentHead >= margin * this.gap) {
             // peek previous head
@@ -76,7 +76,9 @@ export default class CoordsCalculator {
             // move head
             const newCoords = prevHead + this.gap;
             this.coordinates.array[this.coordinates.headIndex] = newCoords;
-            changes.push({ idx: this.coordinates.headIndex, val: newCoords });
+
+            changes[this.coordinates.headIndex] = { idx: this.coordinates.headIndex, val: newCoords };
+
             // move head and tail pointer to next
             currentHead = this.coordinates.headNext;
             currentTail = this.coordinates.tailNext;
@@ -88,7 +90,9 @@ export default class CoordsCalculator {
             // move tail
             const newCoords = nextTail - this.gap;
             this.coordinates.array[this.coordinates.tailIndex] = newCoords;
-            changes.push({ idx: this.coordinates.tailIndex, val: newCoords });
+
+            changes[this.coordinates.tailIndex] = { idx: this.coordinates.tailIndex, val: newCoords };
+
             // move head and tail pointer to prev
             currentHead = this.coordinates.headPrev;
             currentTail = this.coordinates.tailPrev;
@@ -97,7 +101,7 @@ export default class CoordsCalculator {
           return {
             headIndex: this.coordinates.headIndex,
             tailIndex: this.coordinates.tailIndex,
-            changes,
+            changes: Object.values(changes),
           };
         }),
         Ops.filter(({ changes }) => changes.length > 0),

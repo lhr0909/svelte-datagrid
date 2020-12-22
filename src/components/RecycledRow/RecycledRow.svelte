@@ -23,13 +23,13 @@
     xCoordsCalc.changeSubject$
       .pipe(Ops.take(1))
       .subscribe(({ changes }) => {
-        cells = (changes.map(({ idx, val }) => {
+        cells = changes.map(({ idx, val }) => {
           return {
             x: val,
             y: 0,
             text: cellData[idx],
           };
-        }));
+        });
       });
 
     // handle scroll left
@@ -41,8 +41,10 @@
     changeSubscription = xCoordsCalc.changeSubject$
       .pipe(Ops.skip(1))
       .subscribe(({ changes }) => {
+        const prevCells = cells;
+
         changes.forEach(({ idx, val }) => {
-          const cell = cells[idx];
+          const cell = prevCells[idx];
           cell.x = val;
 
           const nextCellData = cellData[Math.floor(val / cellWidth)];
@@ -50,7 +52,7 @@
           if (nextCellData) cell.text = nextCellData;
         });
 
-        cells = cells;
+        cells = prevCells;
       });
   }
 

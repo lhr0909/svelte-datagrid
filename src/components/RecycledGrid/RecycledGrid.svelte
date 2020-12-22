@@ -32,13 +32,12 @@
       .pipe(Ops.take(1))
       .toPromise()
       .then(({ changes }) => {
-        rows = (changes.map(({ idx, val }) => {
+        rows = changes.map(({ idx, val }) => {
           return {
             y: val,
             cellData: (cellData[idx] || []).slice(),
-            // text: cellData[idx],
           };
-        }));
+        });
       });
 
     // handle scroll left
@@ -50,8 +49,10 @@
     changeSubscription = yCoordsCalc.changeSubject$
       .pipe(Ops.skip(1))
       .subscribe(({ changes }) => {
-        changes.forEach(({ idx, val }) => {
-          const row = rows[idx];
+        const prevRows = rows;
+
+        changes.map(({ idx, val }) => {
+          const row = prevRows[idx];
           row.y = val;
 
           const nextCellData = cellData[Math.floor(val / cellWidth)];
@@ -59,7 +60,7 @@
           if (nextCellData) row.cellData = nextCellData.slice();
         });
 
-        rows = rows;
+        rows = prevRows;
       });
   }
 
@@ -84,8 +85,6 @@
 
   .recycled-grid-items {
     position: relative;
-    width: 100%;
-    height: 100%;
   }
 
 </style>
