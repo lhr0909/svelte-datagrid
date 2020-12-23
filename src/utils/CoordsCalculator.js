@@ -1,4 +1,4 @@
-import { ReplaySubject, combineLatest } from 'rxjs';
+import { ReplaySubject, combineLatest, animationFrameScheduler } from 'rxjs';
 import * as Ops from 'rxjs/operators';
 
 import CircularArray from './CircularArray';
@@ -61,7 +61,7 @@ export default class CoordsCalculator {
       this.resizeSubject.pipe(Ops.debounceTime(this.debounceTimeout)),
     ])
       .pipe(
-        Ops.throttleTime(this.throttleTimeout),
+        Ops.throttleTime(0, animationFrameScheduler),
         Ops.map(([scrollOffset, size]) => {
           const margin = Math.ceil((size * this.marginFactor) / this.gap);
 
@@ -101,10 +101,9 @@ export default class CoordsCalculator {
           return {
             headIndex: this.coordinates.headIndex,
             tailIndex: this.coordinates.tailIndex,
-            changes: Object.values(changes),
+            changes,
           };
         }),
-        Ops.filter(({ changes }) => changes.length > 0),
       )
       .subscribe((payload) => this.changeSubject$.next(payload));
   }

@@ -1,4 +1,4 @@
-import { ReplaySubject } from 'rxjs';
+import { combineLatest, ReplaySubject } from 'rxjs';
 import * as Ops from 'rxjs/operators';
 
 import {
@@ -14,11 +14,12 @@ import {
 import CoordsCalculator from './CoordsCalculator';
 
 export const resizeSubject$ = new ReplaySubject(1);
-export const scrollSubject$ = new ReplaySubject(1);
+export const xScrollSubject$ = new ReplaySubject(1);
+export const yScrollSubject$ = new ReplaySubject(1);
 
 const xCoordsCalc = new CoordsCalculator({
   resizeSubject: resizeSubject$.pipe(Ops.pluck('width')),
-  scrollSubject: scrollSubject$.pipe(Ops.pluck('scrollLeft')),
+  scrollSubject: xScrollSubject$,
   totalCount: columns - 1,
   gap: cellWidth,
   throttleTimeout,
@@ -30,7 +31,7 @@ const xCoordsCalc = new CoordsCalculator({
 
 const yCoordsCalc = new CoordsCalculator({
   resizeSubject: resizeSubject$.pipe(Ops.pluck('height')),
-  scrollSubject: scrollSubject$.pipe(Ops.pluck('scrollTop')),
+  scrollSubject: yScrollSubject$,
   totalCount: rows,
   gap: cellHeight,
   throttleTimeout,

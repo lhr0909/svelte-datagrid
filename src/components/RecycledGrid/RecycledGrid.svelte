@@ -1,67 +1,35 @@
 <script>
   import { onDestroy, onMount } from 'svelte';
+  import { animationFrameScheduler } from 'rxjs';
   import * as Ops from 'rxjs/operators';
 
   import RecycledRow from '../RecycledRow/RecycledRow.svelte';
 
-  import { columns, rows as rowCount, cellHeight, cellWidth } from '../../utils/consts';
-  import { yCoordsCalc, scrollSubject$, xCoordsCalc } from '../../utils/subjects';
+  import { cellHeight, cellWidth } from '../../utils/consts';
+  import { yCoordsCalc, yScrollSubject$ } from '../../utils/subjects';
 
-  export let style;
-  // export let y;
   export let cellData = [];
-  export let initialX = 0;
-  export let initialY = 0;
 
-  let rows = [];
-
+  let recycledColumn;
   let scrollSubscription;
-  let changeSubscription;
+
+  let rows = yCoordsCalc.changeSubject$.pipe(
+    Ops.scan((acc, { changes }) => Object.assign(acc, changes), {}),
+    Ops.map(Object.values),
+    Ops.map(changes => changes.map(({ idx, val }) => ({
+      idx,
+      y: val,
+      data: cellData[Math.floor(val / cellHeight)] && cellData[Math.floor(val / cellHeight)].slice() || [],
+    }))),
+  );
 
   const updateYCoordsCalc = () => {
-    const recycledGridRef = document.querySelector('.recycled-grid');
-
-    if (!recycledGridRef) return;
-
-    const recycledGrid = recycledGridRef;
-
-    recycledGrid.style.width = `${(xCoordsCalc.viewportCount - 1) * cellWidth}px`;
-    recycledGrid.style.height = `${(yCoordsCalc.viewportCount - 1) * cellHeight}px`;
-
-    yCoordsCalc.changeSubject$
-      .pipe(Ops.take(1))
-      .toPromise()
-      .then(({ changes }) => {
-        rows = changes.map(({ idx, val }) => {
-          return {
-            y: val,
-            cellData: (cellData[idx] || []).slice(),
-          };
-        });
-      });
+    recycledColumn.style.height = `${(yCoordsCalc.viewportCount - 1) * cellHeight}px`;
 
     // handle scroll left
-    scrollSubscription = scrollSubject$.subscribe(({ scrollTop }) => {
-      recycledGrid.scrollTop = scrollTop;
+    scrollSubscription = yScrollSubject$.pipe(Ops.throttleTime(0, animationFrameScheduler)).subscribe(scrollTop => {
+      recycledColumn.scrollTop = scrollTop;
     });
-
-    // subscribe updates
-    changeSubscription = yCoordsCalc.changeSubject$
-      .pipe(Ops.skip(1))
-      .subscribe(({ changes }) => {
-        const prevRows = rows;
-
-        changes.map(({ idx, val }) => {
-          const row = prevRows[idx];
-          row.y = val;
-
-          const nextCellData = cellData[Math.floor(val / cellWidth)];
-
-          if (nextCellData) row.cellData = nextCellData.slice();
-        });
-
-        rows = prevRows;
-      });
   }
 
   onMount(() => {
@@ -69,43 +37,37 @@
   });
 
   onDestroy(() => {
-    scrollSubscription.unsubscribe();
-    changeSubscription.unsubscribe();
+    scrollSubscription && scrollSubscription.unsubscribe();
   });
 
 </script>
 
 <style>
   .recycled-grid {
-    position: absolute;
-    top: var(--y-val);
-    left: var(--x-val);
-    overflow: hidden;
+    overflow-y: hidden;
+    overflow-x: auto;
   }
 
-  .recycled-grid-items {
+  .recycled-grid-inner {
     position: relative;
+    height: var(--column-height);
+    width: var(--row-width);
   }
-
 </style>
 
 <div
   class="recycled-grid"
-  style="
-    --x-val: {initialX}px;
-    --y-val: {initialY}px;
-    z-index: {style.zIndex};
-  "
+  bind:this={recycledColumn}
 >
   <div
-    class="recycled-grid-items"
+    class="recycled-grid-inner"
     style="
-      width: {columns * cellWidth}px;
-      height: {rowCount * cellHeight}px;
+      --column-height: {cellData.length * cellHeight}px;
+      --row-width: {(cellData[0] && cellData[0].length || 0) * cellWidth}px;
     "
   >
-    {#each rows as row}
-      <RecycledRow {...row} style={{ zIndex: style.zIndex }} initialX={0} />
+    {#each $rows as row (row.idx)}
+      <RecycledRow y={row.y} cellData={row.data} absolute={true} />
     {/each}
   </div>
 </div>

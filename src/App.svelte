@@ -1,6 +1,7 @@
 <script>
   import Grid from './components/Grid/Grid.svelte';
-  import ScrollContainer from './components/ScrollContainer/ScrollContainer.svelte';
+  import HorizontalScrollBar from './components/ScrollBar/HorizontalScrollBar.svelte';
+  import VeriticalScrollBar from './components/ScrollBar/VeriticalScrollBar.svelte';
 </script>
 
 <style>
@@ -15,5 +16,6 @@
 
 <div class="app-container">
   <Grid />
-  <ScrollContainer />
+  <HorizontalScrollBar />
+  <VeriticalScrollBar />
 </div>

@@ -1,110 +1,82 @@
 <script>
   import { onDestroy, onMount } from 'svelte';
+  import { animationFrameScheduler } from 'rxjs';
   import * as Ops from 'rxjs/operators';
 
   import Cell from '../Cell/Cell.svelte';
 
-  import { columns, cellHeight, cellWidth } from '../../utils/consts';
-  import { xCoordsCalc, scrollSubject$ } from '../../utils/subjects';
+  import { cellWidth } from '../../utils/consts';
+  import { xCoordsCalc, xScrollSubject$ } from '../../utils/subjects';
 
-  export let style;
   export let y;
   export let cellData = [];
-  export let initialX = 0;
+  export let absolute = false;
 
-  let cells = [];
-  let width = (columns * cellWidth);
-  let x = initialX;
-
+  let recycledRow;
   let scrollSubscription;
-  let changeSubscription;
+
+  let cells = xCoordsCalc.changeSubject$.pipe(
+    Ops.scan((acc, { changes }) => Object.assign(acc, changes), {}),
+    Ops.map(Object.values),
+    Ops.map(changes => changes.map(({ idx, val }) => ({
+      idx,
+      x: val,
+      y: 0,
+      text: cellData[Math.floor(val / cellWidth)].slice(),
+    }))),
+  );
 
   const updateXCoordsCalc = () => {
-    xCoordsCalc.changeSubject$
-      .pipe(Ops.take(1))
-      .subscribe(({ changes }) => {
-        cells = changes.map(({ idx, val }) => {
-          return {
-            x: val,
-            y: 0,
-            text: cellData[idx],
-          };
-        });
-      });
+    recycledRow.style.width = `${(xCoordsCalc.viewportCount - 1) * cellWidth}px`;
 
     // handle scroll left
-    scrollSubscription = scrollSubject$.subscribe(({ scrollLeft }) => {
-      x = ((initialX || 0) - scrollLeft);
+    scrollSubscription = xScrollSubject$.pipe(Ops.throttleTime(0, animationFrameScheduler)).subscribe(scrollLeft => {
+      recycledRow.scrollLeft = scrollLeft;
     });
-
-    // subscribe updates
-    changeSubscription = xCoordsCalc.changeSubject$
-      .pipe(Ops.skip(1))
-      .subscribe(({ changes }) => {
-        const prevCells = cells;
-
-        changes.forEach(({ idx, val }) => {
-          const cell = prevCells[idx];
-          cell.x = val;
-
-          const nextCellData = cellData[Math.floor(val / cellWidth)];
-
-          if (nextCellData) cell.text = nextCellData;
-        });
-
-        cells = prevCells;
-      });
   }
 
-
-  const initCells = () => {
-    cells = ((originalCells) => {
-      originalCells.forEach((cell) => {
-        cell.text = cellData[Math.floor(cell.x / cellWidth)];
-      });
-
-      return originalCells;
-    });
-  };
-
   onMount(() => {
-    initCells();
     updateXCoordsCalc();
   });
 
   onDestroy(() => {
-    scrollSubscription.unsubscribe();
-    changeSubscription.unsubscribe();
+    scrollSubscription && scrollSubscription.unsubscribe();
   });
-
 </script>
 
 <style>
   .recycled-row {
-    position: absolute;
-    top: 0;
-    left: var(--x-val);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
-  .recycled-row-items {
+  .absolute {
+    position: absolute;
+  }
+
+  .recycled-row-inner {
     position: relative;
+    width: var(--row-width);
+    height: calc(var(--cell-height) + 2px);
   }
 </style>
 
 <div
   class="recycled-row"
+  class:absolute
+  bind:this={recycledRow}
   style="
-    --x-val: {x}px;
-    z-index: {style.zIndex};
-    width: {width}px;
-    height: {cellHeight}px;
     transform: translateY({y}px);
   "
 >
-  <div class="recycled-row-items">
-    {#each cells as cell, idx}
-      <Cell {...cell} style={{ zIndex: style.zIndex }} />
+  <div
+    class="recycled-row-inner"
+    style="
+      --row-width: {cellData.length * cellWidth}px;
+    "
+  >
+    {#each $cells as cell (cell.idx)}
+      <Cell x={cell.x} y={cell.y} text={cell.text} />
     {/each}
   </div>
 </div>
