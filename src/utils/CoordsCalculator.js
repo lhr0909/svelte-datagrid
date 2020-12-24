@@ -1,4 +1,5 @@
-import { ReplaySubject, combineLatest, animationFrameScheduler } from 'rxjs';
+import { tick } from 'svelte';
+import { ReplaySubject, combineLatest, animationFrameScheduler, from } from 'rxjs';
 import * as Ops from 'rxjs/operators';
 
 import CircularArray from './CircularArray';
@@ -104,6 +105,7 @@ export default class CoordsCalculator {
             changes,
           };
         }),
+        Ops.concatMap(c => from(tick()).pipe(Ops.map(_ => c))),
       )
       .subscribe((payload) => this.changeSubject$.next(payload));
   }

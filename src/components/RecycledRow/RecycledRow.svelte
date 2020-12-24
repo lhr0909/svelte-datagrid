@@ -13,6 +13,7 @@
   export let absolute = false;
 
   let recycledRow;
+  let recycledRowInner;
   let scrollSubscription;
 
   let cells = xCoordsCalc.changeSubject$.pipe(
@@ -22,12 +23,13 @@
       idx,
       x: val,
       y: 0,
-      text: cellData[Math.floor(val / cellWidth)].slice(),
+      text: cellData[Math.floor(val / cellWidth)],
     }))),
   );
 
   const updateXCoordsCalc = () => {
     recycledRow.style.width = `${(xCoordsCalc.viewportCount - 1) * cellWidth}px`;
+    recycledRowInner.style.width = `${cellData.length * cellWidth}px`;
 
     // handle scroll left
     scrollSubscription = xScrollSubject$.pipe(Ops.throttleTime(0, animationFrameScheduler)).subscribe(scrollLeft => {
@@ -71,9 +73,7 @@
 >
   <div
     class="recycled-row-inner"
-    style="
-      --row-width: {cellData.length * cellWidth}px;
-    "
+    bind:this={recycledRowInner}
   >
     {#each $cells as cell (cell.idx)}
       <Cell x={cell.x} y={cell.y} text={cell.text} />
